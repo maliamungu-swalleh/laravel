@@ -1,0 +1,39 @@
+#!/usr/bin/env php
+<?php
+
+use Illuminate\Contracts\Console\Kernel;
+use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Component\Console\Output\ConsoleOutput;
+
+define('LARAVEL_START', microtime(true));
+define('UGCFYP_VERSION', '1.0.0');
+
+require __DIR__.'/vendor/autoload.php';
+
+$app = require_once __DIR__.'/bootstrap/app.php';
+
+/** @var Kernel $kernel */
+$kernel = $app->make(Kernel::class);
+
+// Add UGCFYP ASCII art for `php artisan` (no command)
+$input = new ArgvInput;
+$output = new ConsoleOutput;
+
+if (count($input->getArguments()) === 0 || $input->getFirstArgument() === null) {
+    $output->writeln('');
+    $output->writeln('  <fg=cyan>██╗   ██╗ ██████╗  ██████╗███████╗██╗   ██╗██████╗ </>');
+    $output->writeln('  <fg=cyan>██║   ██║██╔════╝ ██╔════╝██╔════╝╚██╗ ██╔╝██╔══██╗</>');
+    $output->writeln('  <fg=cyan>██║   ██║██║  ███╗██║     █████╗   ╚████╔╝ ██████╔╝</>');
+    $output->writeln('  <fg=cyan>██║   ██║██║   ██║██║     ██╔══╝    ╚██╔╝  ██╔═══╝ </>');
+    $output->writeln('  <fg=cyan>╚██████╔╝╚██████╔╝╚██████╗██║        ██║   ██║     </>');
+    $output->writeln('  <fg=cyan> ╚═════╝  ╚═════╝  ╚═════╝╚═╝        ╚═╝   ╚═╝     </>');
+    $output->writeln('');
+    $output->writeln('  <fg=green>Creator • Artist • Brand Talent Economy Platform</>');
+    $output->writeln('  <fg=gray>Version ' . UGCFYP_VERSION . ' | Laravel ' . app()->version() . '</>');
+    $output->writeln('');
+}
+
+$status = $kernel->handle($input, $output);
+$kernel->terminate($input, $status);
+
+exit($status);

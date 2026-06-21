@@ -1,0 +1,62 @@
+/node_modules
+/vendor
+.env
+.env.local
+.env.*.local
+/storage/*.key
+/bootstrap/cache/
+.DS_Store
+Thumbs.db
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.log
+*.pot
+*.mo
+.env.*.php
+.DS_Store.AppleDouble
+.LSOverride
+
+# Testing
+/coverage
+.phpunit.result.cache
+phpunit.xml
+
+# Composer
+composer.phar
+/vendor/
+
+# npm
+npm-debug.log
+yarn-error.log
+
+# Laravel specific
+/bootstrap/cache/
+/storage/
+/public/storage
+.env
+.env.backup
+.env.production.local
+.env.testing.local
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Misc
+.cache
+*.sublime-project
+*.sublime-workspace

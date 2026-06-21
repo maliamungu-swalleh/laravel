@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # ─── Laravel API ────────────────────────────────
+  laravel-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: laravel-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+      - ./storage:/var/www/storage
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    depends_on:
+      - postgres-db
+      - redis-cache
+    networks:
+      - ugcfyp-network
+    command: >
+      sh -c "php artisan migrate --force &&
+             php artisan serve --host=0.0.0.0 --port=8000"
+
+  # ─── PostgreSQL ─────────────────────────────────
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ugcfyp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - ugcfyp-network
+
+  # ─── Redis ──────────────────────────────────────
+  redis-cache:
+    image: redis:7-alpine
+    container_name: redis-cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ugcfyp-network
+
+  # ─── Reverb WebSocket Server ────────────────────
+  reverb-server:
+    image: laravel-reverb:latest
+    container_name: reverb-server
+    restart: unless-stopped
+    environment:
+      REVERB_APP_ID: ugcfyp
+      REVERB_APP_KEY: ugcfyp_reverb_key
+      REVERB_APP_SECRET: ugcfyp_reverb_secret
+      REVERB_HOST: 0.0.0.0
+      REVERB_PORT: 8080
+    ports:
+      - "8080:8080"
+    networks:
+      - ugcfyp-network
+
+  # ─── Mailpit (Email Testing) ────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - ugcfyp-network
+
+  # ─── MinIO (S3-compatible local storage) ────────
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - ugcfyp-network
+
+  # ─── Next.js Frontend ───────────────────────────
+  nextjs-frontend:
+    build:
+      context: ../ugcfyp-frontend
+      dockerfile: Dockerfile.dev
+    container_name: nextjs-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../ugcfyp-frontend:/app
+      - /app/node_modules
+    environment:
+      NEXT_PUBLIC_API_URL: http://laravel-app:8000/api
+      NEXT_PUBLIC_REVERB_HOST: reverb-server
+      NEXT_PUBLIC_REVERB_PORT: 8080
+    depends_on:
+      - laravel-app
+    networks:
+      - ugcfyp-network
+
+  # ─── Queue Worker ───────────────────────────────
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: queue-worker
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    command: php artisan queue:work --tries=3 --sleep=3
+    depends_on:
+      - redis-cache
+    networks:
+      - ugcfyp-network
+
+  # ─── Scheduler ──────────────────────────────────
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    command: php artisan schedule:work
+    depends_on:
+      - redis-cache
+    networks:
+      - ugcfyp-network
+
+networks:
+  ugcfyp-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
